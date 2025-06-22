@@ -166,6 +166,126 @@ Each service has its own H2 in-memory database with a web console:
    curl http://localhost:8083/api/borrowings
    ```
 
+# 🌐 Phase 2: Eureka Service Discovery
+
+## Overview
+
+Eureka is a **Service Discovery** tool from Netflix that acts as a service registry for microservices. It enables services to find and communicate with each other without hardcoded hostnames and ports.
+
+## 🏗️ Architecture
+
+```
++----------------+     +----------------+     +------------------+
+|                |     |                |     |                  |
+|  Book Service  |     |  User Service  |     | Borrowing Service |
+|  (Port: 8081)  |     |  (Port: 8082)  |     |   (Port: 8083)   |
+|                |     |                |     |                  |
++--------+-------+     +-------+--------+     +---------+--------+
+         |                   |                      |
+         |                   |                      |
+         v                   v                      v
+        +--------------------------------------------------+
+        |                                                  |
+        |               Eureka Discovery Server              |
+        |                   (Port: 8761)                     |
+        |                                                  |
+        +--------------------------------------------------+
+```
+
+## 📋 Services Registration
+
+| Service           | Port | Eureka Service Name   | Status  |
+|-------------------|------|----------------------|---------|
+| Discovery Service | 8761 | discovery-service    | ✅ Live |
+| Book Service     | 8081 | book-service         | ✅ Live |
+| User Service     | 8082 | user-service         | ✅ Live |
+| Borrowing Service| 8083 | borrowing-service    | ✅ Live |
+
+## 🚀 How to Start
+
+1. **Start Discovery Server**
+   ```bash
+   cd discovery-service
+   mvn spring-boot:run
+   ```
+   - Access Eureka Dashboard: http://localhost:8761
+
+2. **Start Other Services** (in any order)
+   ```bash
+   # Terminal 2
+   cd book-service
+   mvn spring-boot:run
+
+   # Terminal 3
+   cd user-service
+   mvn spring-boot:run
+
+   # Terminal 4
+   cd borrowing-service
+   mvn spring-boot:run
+   ```
+
+## 🔍 Verifying the Setup
+
+1. Open the Eureka Dashboard: http://localhost:8761
+2. You should see all three services registered under "Instances currently registered with Eureka"
+3. Each service will be listed with its service ID and status "UP"
+
+## 🔄 Service Discovery in Action
+
+Services can now discover each other using their service names. For example, to call the book service from another service:
+
+```java
+@Autowired
+private DiscoveryClient discoveryClient;
+
+public void someMethod() {
+    List<ServiceInstance> instances = discoveryClient.getInstances("book-service");
+    ServiceInstance instance = instances.get(0);
+    String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/api/books";
+    // Make HTTP request to the URL
+}
+```
+
+## ⚙️ Configuration Details
+
+### Discovery Service (`discovery-service`)
+- Port: 8761
+- Self-registration: Disabled
+- Peer awareness: Not configured (single instance)
+
+### Client Services (Book, User, Borrowing)
+- Auto-registration with Eureka: Enabled
+- Health check: Automatic (via Spring Boot Actuator)
+- Heartbeat: Every 30 seconds (default)
+- Lease renewal: Every 30 seconds (default)
+- Lease expiration: 90 seconds (default)
+
+## 🔄 Service-to-Service Communication
+
+With Eureka in place, services can communicate using service names instead of hardcoded URLs. For example:
+
+```
+http://book-service/api/books/1
+http://user-service/api/users/1
+```
+
+## 🔍 Eureka Dashboard
+
+The Eureka dashboard provides:
+- List of all registered instances
+- Status of each instance (UP, DOWN, OUT_OF_SERVICE)
+- Metadata about each instance
+- Basic health information
+
+## 📈 Next Steps
+
+1. **High Availability**: Set up multiple Eureka servers for redundancy
+2. **Load Balancing**: Use Ribbon for client-side load balancing
+3. **API Gateway**: Implement Spring Cloud Gateway for routing
+4. **Resilience**: Add circuit breakers with Resilience4j
+5. **Distributed Tracing**: Implement with Sleuth and Zipkin
+
 ## 🛡️ Future Enhancements
 
 1. **Service Discovery** with Eureka
