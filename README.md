@@ -1,6 +1,6 @@
 # Library Management System - Microservices
 
-A distributed library management system built with Spring Boot microservices architecture.
+A distributed library management system built with Spring Boot microservices architecture, featuring service discovery and API Gateway.
 
 ## 🏗️ Architecture
 
@@ -10,8 +10,45 @@ A distributed library management system built with Spring Boot microservices arc
 |  Book Service  |     |  User Service  |     | Borrowing Service |
 |  (Port: 8081)  |     |  (Port: 8082)  |     |   (Port: 8083)   |
 |                |     |                |     |                  |
-+----------------+     +----------------+     +------------------+
++--------+-------+     +-------+--------+     +---------+--------+
+         |                   |                      |
+         |                   |                      |
+         v                   v                      v
+        +--------------------------------------------------+
+        |                                                  |
+        |                 API Gateway (8080)                 |
+        |                                                  |
+        +--------------------------------------------------+
+                               |
+                               v
+                        +----------------+
+                        |                |
+                        |    Clients     |
+                        |                |
+                        +----------------+
+
++--------------------------------------------------+
+|                                                  |
+|             Eureka Discovery Server              |
+|                 (Port: 8761)                     |
+|                                                  |
++--------------------------------------------------+
 ```
+
+## 🚀 API Gateway (Port: 8080)
+
+The API Gateway serves as the single entry point for all client requests. It provides the following features:
+
+- **Dynamic Routing**: Routes requests to the appropriate microservice
+- **Load Balancing**: Distributes traffic across service instances
+- **Circuit Breaking**: Handles failures gracefully
+- **Service Discovery**: Integrates with Eureka for dynamic service lookup
+
+### Available Routes:
+- `http://localhost:8080/api/books/**` → Book Service
+- `http://localhost:8080/api/users/**` → User Service
+- `http://localhost:8080/api/borrowings/**` → Borrowing Service
+- `http://localhost:8080/eureka/web` → Eureka Dashboard
 
 ## 📚 Services Overview
 
