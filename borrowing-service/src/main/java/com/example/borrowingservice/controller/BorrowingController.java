@@ -1,5 +1,8 @@
 package com.example.borrowingservice.controller;
 
+import com.example.borrowingservice.client.ServiceClient;
+import com.example.borrowingservice.dto.BookDTO;
+import com.example.borrowingservice.dto.UserDTO;
 import com.example.borrowingservice.model.Borrowing;
 import com.example.borrowingservice.repository.BorrowingRepository;
 import org.springframework.http.ResponseEntity;
@@ -7,16 +10,20 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/borrowings")
 public class BorrowingController {
 
     private final BorrowingRepository borrowingRepository;
+    private final ServiceClient serviceClient;
 
-    public BorrowingController(BorrowingRepository borrowingRepository) {
+    public BorrowingController(BorrowingRepository borrowingRepository, ServiceClient serviceClient) {
         this.borrowingRepository = borrowingRepository;
+        this.serviceClient = serviceClient;
     }
 
     @PostMapping
@@ -63,5 +70,24 @@ public class BorrowingController {
             return borrowingRepository.findByBookId(bookId);
         }
         return borrowingRepository.findAll();
+    }
+    
+    @GetMapping("/details/{borrowingId}")
+    public ResponseEntity<Map<String, Object>> getBorrowingDetails(@PathVariable Long borrowingId) {
+        return borrowingRepository.findById(borrowingId)
+            .map(borrowing -> {
+                // Get book and user details
+                BookDTO book = serviceClient.getBookDetails(borrowing.getBookId());
+                UserDTO user = serviceClient.getUserDetails(borrowing.getUserId());
+                
+                // Create response
+                Map<String, Object> response = new HashMap<>();
+                response.put("borrowing", borrowing);
+                response.put("book", book);
+                response.put("user", user);
+                
+                return ResponseEntity.ok(response);
+            })
+            .orElse(ResponseEntity.notFound().build());
     }
 }
